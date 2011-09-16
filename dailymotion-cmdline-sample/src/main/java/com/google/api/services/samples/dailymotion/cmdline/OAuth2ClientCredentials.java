@@ -20,10 +20,9 @@ package com.google.api.services.samples.dailymotion.cmdline;
  *
  * <p>
  * Once at the Developer Profile page, you will need to create a Daily Motion account if you do not
- * already have one. Click on "Create a new API Key".
- * Enter "http://127.0.0.1:8080/Callback" under "Callback URL" and select "Native Application"
- * under "Application Profile". Enter a port number other than 8080 if that is what you intend to
- * use.
+ * already have one. Click on "Create a new API Key". Enter "http://127.0.0.1:8080/Callback" under
+ * "Callback URL" and select "Native Application" under "Application Profile". Enter a port number
+ * other than 8080 if that is what you intend to use.
  * </p>
  *
  * @author Ravi Mistry
