@@ -40,14 +40,14 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
   private static final String LOCALHOST = "127.0.0.1";
   private static final int PORT = 8080;
 
-  /** Server or {@code null} before {@link #getRedirectUrl()}. */
+  /** Server or {@code null} before {@link #getRedirectUri()}. */
   private Server server;
 
   /** Verification code or {@code null} before received. */
   volatile String code;
 
   @Override
-  public String getRedirectUrl() throws Exception {
+  public String getRedirectUri() throws Exception {
     server = new Server(PORT);
     for (Connector c : server.getConnectors()) {
       c.setHost(LOCALHOST);

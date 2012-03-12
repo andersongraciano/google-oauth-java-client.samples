@@ -14,15 +14,16 @@
 
 package com.google.api.services.samples.dailymotion.cmdline;
 
-import com.google.api.client.auth.oauth2.draft10.AccessProtectedResource;
-import com.google.api.client.auth.oauth2.draft10.AccessProtectedResource.Method;
-import com.google.api.client.auth.oauth2.draft10.AccessTokenErrorResponse;
-import com.google.api.client.auth.oauth2.draft10.AccessTokenRequest.AuthorizationCodeGrant;
-import com.google.api.client.auth.oauth2.draft10.AccessTokenResponse;
+import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
+import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
+import com.google.api.client.auth.oauth2.BearerToken;
+import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.http.json.JsonHttpParser;
@@ -33,6 +34,7 @@ import java.awt.Desktop;
 import java.awt.Desktop.Action;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 
 
 /**
@@ -46,42 +48,37 @@ public class DailyMotionSample {
   /** OAuth 2 scope. */
   private static final String SCOPE = "read";
 
-  private static final String AUTHORIZATION_SERVER = "https://api.dailymotion.com/oauth/token";
+  /** Global instance of the HTTP transport. */
+  private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 
-  static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+  /** Global instance of the JSON factory. */
   static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
-  private static void run(JsonFactory jsonFactory) throws Exception {
+  private static final String TOKEN_SERVER_URL = "https://api.dailymotion.com/oauth/token";
+  private static final String AUTHORIZATION_SERVER_URL =
+      "https://api.dailymotion.com/oauth/authorize";
+
+  private static void run() throws Exception {
     // authorization
     VerificationCodeReceiver receiver = new LocalServerReceiver();
     try {
-      String redirectUrl = receiver.getRedirectUrl();
-      launchInBrowser("google-chrome", redirectUrl, OAuth2ClientCredentials.CLIENT_ID, SCOPE);
-      AccessTokenResponse response = exchangeCodeForAccessToken(redirectUrl,
-          receiver,
-          HTTP_TRANSPORT,
-          jsonFactory,
-          OAuth2ClientCredentials.CLIENT_ID,
-          OAuth2ClientCredentials.CLIENT_SECRET);
-      final AccessProtectedResource initializer = new AccessProtectedResource(response.accessToken,
-          Method.AUTHORIZATION_HEADER,
-          HTTP_TRANSPORT,
-          jsonFactory,
-          AUTHORIZATION_SERVER,
-          OAuth2ClientCredentials.CLIENT_ID,
-          OAuth2ClientCredentials.CLIENT_SECRET,
-          response.refreshToken);
+      String redirectUri = receiver.getRedirectUri();
+      launchInBrowser("google-chrome", redirectUri, OAuth2ClientCredentials.CLIENT_ID, SCOPE);
+
+      final Credential credential = authorize(receiver, redirectUri);
+
       HttpRequestFactory requestFactory =
           HTTP_TRANSPORT.createRequestFactory(new HttpRequestInitializer() {
-
             @Override
             public void initialize(HttpRequest request) throws IOException {
-              initializer.initialize(request);
+              credential.initialize(request);
               request.addParser(new JsonHttpParser(JSON_FACTORY));
             }
           });
+
       DailyMotionUrl url = new DailyMotionUrl("https://api.dailymotion.com/videos/favorites");
-      url.fields = "id,tags,title,url";
+      url.setFields("id,tags,title,url");
+
       HttpRequest request = requestFactory.buildGetRequest(url);
       VideoFeed videoFeed = request.execute().parseAs(VideoFeed.class);
       if (videoFeed.list.isEmpty()) {
@@ -105,36 +102,29 @@ public class DailyMotionSample {
     }
   }
 
-  private static AccessTokenResponse exchangeCodeForAccessToken(String redirectUrl,
-      VerificationCodeReceiver receiver,
-      HttpTransport transport,
-      JsonFactory jsonFactory,
-      String clientId,
-      String clientSecret) throws IOException {
+  private static Credential authorize(VerificationCodeReceiver receiver, String redirectUri)
+      throws IOException {
     String code = receiver.waitForCode();
-    try {
-      // exchange code for an access token
-      return new AuthorizationCodeGrant(new NetHttpTransport(),
-          jsonFactory,
-          AUTHORIZATION_SERVER,
-          clientId,
-          clientSecret,
-          code,
-          redirectUrl).execute();
-    } catch (HttpResponseException e) {
-      AccessTokenErrorResponse response = e.getResponse().parseAs(AccessTokenErrorResponse.class);
-      System.out.println();
-      System.err.println("Error: " + response.error);
-      System.out.println();
-      System.exit(1);
-      return null;
-    }
+    AuthorizationCodeFlow codeFlow = new AuthorizationCodeFlow.Builder(
+        BearerToken.authorizationHeaderAccessMethod(),
+        HTTP_TRANSPORT,
+        JSON_FACTORY,
+        new GenericUrl(TOKEN_SERVER_URL),
+        new ClientParametersAuthentication(
+            OAuth2ClientCredentials.CLIENT_ID, OAuth2ClientCredentials.CLIENT_SECRET),
+        OAuth2ClientCredentials.CLIENT_ID,
+        AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).build();
+
+    TokenResponse response = codeFlow.newTokenRequest(code)
+        .setRedirectUri(redirectUri).setScopes(Arrays.asList(SCOPE)).execute();
+
+    return codeFlow.createAndStoreCredential(response, null);
   }
 
   private static void launchInBrowser(
       String browser, String redirectUrl, String clientId, String scope) throws IOException {
-    String authorizationUrl =
-        new DailyMotionAuthorizationRequestUrl(clientId, redirectUrl, scope).build();
+    String authorizationUrl = new AuthorizationCodeRequestUrl(
+        AUTHORIZATION_SERVER_URL, clientId).setRedirectUri(redirectUrl).build();
     if (Desktop.isDesktopSupported()) {
       Desktop desktop = Desktop.getDesktop();
       if (desktop.isSupported(Action.BROWSE)) {
@@ -151,15 +141,14 @@ public class DailyMotionSample {
   }
 
   public static void main(String[] args) {
-    JsonFactory jsonFactory = new JacksonFactory();
     try {
       try {
         OAuth2ClientCredentials.errorIfNotSpecified();
-        run(jsonFactory);
+        run();
         // Success!
         return;
-      } catch (HttpResponseException e) {
-        System.err.println(e.getResponse().parseAsString());
+      } catch (IOException e) {
+        System.err.println(e.getMessage());
       }
     } catch (Throwable t) {
       t.printStackTrace();

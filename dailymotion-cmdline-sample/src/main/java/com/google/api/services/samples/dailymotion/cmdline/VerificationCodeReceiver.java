@@ -21,8 +21,8 @@ package com.google.api.services.samples.dailymotion.cmdline;
  */
 public interface VerificationCodeReceiver {
 
-  /** Returns the redirect URL. */
-  String getRedirectUrl() throws Exception;
+  /** Returns the redirect URI. */
+  String getRedirectUri() throws Exception;
 
   /** Waits for a verification code. */
   String waitForCode();

@@ -17,16 +17,32 @@ package com.google.api.services.samples.dailymotion.cmdline;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.util.Key;
 
+
 /**
  * URL for Dailymotion API.
  *
  * @author Yaniv Inbar
  */
 public class DailyMotionUrl extends GenericUrl {
+
+  @Key
+  private String fields;
+
   public DailyMotionUrl(String encodedUrl) {
     super(encodedUrl);
   }
 
-  @Key
-  public String fields;
+  /**
+   * @return the fields
+   */
+  public String getFields() {
+    return fields;
+  }
+
+  /**
+   * @param fields the fields to set
+   */
+  public void setFields(String fields) {
+    this.fields = fields;
+  }
 }
