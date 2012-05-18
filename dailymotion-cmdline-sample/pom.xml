@@ -30,19 +30,6 @@
     <url>http://code.google.com/p/google-oauth-java-client/source/browse/?repo=samples</url>
   </scm>
 
-  <repositories>
-    <repository>
-      <id>googleapis</id>
-      <url>http://mavenrepo.google-oauth-java-client.googlecode.com/hg/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-    </repository>
-  </repositories>
-
   <developers>
     <developer>
       <id>rmistry</id>
@@ -126,7 +113,7 @@
     <dependency>
       <groupId>com.google.oauth-client</groupId>
       <artifactId>google-oauth-client</artifactId>
-      <version>1.8.0-beta</version>
+      <version>1.9.0-beta</version>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
