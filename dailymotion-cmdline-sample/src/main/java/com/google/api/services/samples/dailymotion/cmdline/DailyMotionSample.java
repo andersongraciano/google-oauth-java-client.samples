@@ -105,15 +105,15 @@ public class DailyMotionSample {
   private static Credential authorize(VerificationCodeReceiver receiver, String redirectUri)
       throws IOException {
     String code = receiver.waitForCode();
-    AuthorizationCodeFlow codeFlow = new AuthorizationCodeFlow.Builder(
-        BearerToken.authorizationHeaderAccessMethod(),
-        HTTP_TRANSPORT,
-        JSON_FACTORY,
-        new GenericUrl(TOKEN_SERVER_URL),
-        new ClientParametersAuthentication(
-            OAuth2ClientCredentials.CLIENT_ID, OAuth2ClientCredentials.CLIENT_SECRET),
-        OAuth2ClientCredentials.CLIENT_ID,
-        AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).build();
+    AuthorizationCodeFlow codeFlow =
+        new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
+            HTTP_TRANSPORT,
+            JSON_FACTORY,
+            new GenericUrl(TOKEN_SERVER_URL),
+            new ClientParametersAuthentication(
+                OAuth2ClientCredentials.CLIENT_ID, OAuth2ClientCredentials.CLIENT_SECRET),
+            OAuth2ClientCredentials.CLIENT_ID,
+            AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).build();
 
     TokenResponse response = codeFlow.newTokenRequest(code)
         .setRedirectUri(redirectUri).setScopes(Arrays.asList(SCOPE)).execute();
@@ -124,7 +124,8 @@ public class DailyMotionSample {
   private static void launchInBrowser(
       String browser, String redirectUrl, String clientId, String scope) throws IOException {
     String authorizationUrl = new AuthorizationCodeRequestUrl(
-        AUTHORIZATION_SERVER_URL, clientId).setRedirectUri(redirectUrl).build();
+        AUTHORIZATION_SERVER_URL, clientId).setRedirectUri(redirectUrl)
+        .setScopes(Arrays.asList(scope)).build();
     if (Desktop.isDesktopSupported()) {
       Desktop desktop = Desktop.getDesktop();
       if (desktop.isSupported(Action.BROWSE)) {
