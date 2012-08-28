@@ -27,17 +27,17 @@ package com.google.api.services.samples.dailymotion.cmdline;
  * 
  * @author Ravi Mistry
  */
-public class OAuth2ClientCredentials {
+public class ClientCredentials {
 
   /** Value of the "API Key". */
   public static final String CLIENT_ID =
       "Enter API Key from http://www.dailymotion.com/profile/developer into CLIENT_ID in "
-      + OAuth2ClientCredentials.class;
+      + ClientCredentials.class;
 
   /** Value of the "API Secret". */
   public static final String CLIENT_SECRET =
       "Enter API Secret from http://www.dailymotion.com/profile/developer into CLIENT_SECRET in "
-      + OAuth2ClientCredentials.class;
+      + ClientCredentials.class;
 
   public static void errorIfNotSpecified() {
     if (CLIENT_ID.startsWith("Enter ")) {

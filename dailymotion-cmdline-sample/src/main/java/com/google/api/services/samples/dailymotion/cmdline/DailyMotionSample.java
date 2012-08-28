@@ -15,11 +15,12 @@
 package com.google.api.services.samples.dailymotion.cmdline;
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
-import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
 import com.google.api.client.auth.oauth2.BearerToken;
 import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeCommandLine;
+import com.google.api.client.extensions.java6.auth.oauth2.FileCredentialStore;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
@@ -28,13 +29,10 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
-import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
 
-import java.awt.Desktop;
-import java.awt.Desktop.Action;
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
 
 
 /**
@@ -48,6 +46,12 @@ public class DailyMotionSample {
   /** OAuth 2 scope. */
   private static final String SCOPE = "read";
 
+  /** Local server host name to use. */
+  private static final String HOST = "127.0.0.1";
+
+  /** Local server port to use. */
+  private static final int PORT = 8080;
+
   /** Global instance of the HTTP transport. */
   private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 
@@ -55,96 +59,67 @@ public class DailyMotionSample {
   static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
   private static final String TOKEN_SERVER_URL = "https://api.dailymotion.com/oauth/token";
+
   private static final String AUTHORIZATION_SERVER_URL =
       "https://api.dailymotion.com/oauth/authorize";
 
   private static void run() throws Exception {
     // authorization
-    VerificationCodeReceiver receiver = new LocalServerReceiver();
-    try {
-      String redirectUri = receiver.getRedirectUri();
-      launchInBrowser("google-chrome", redirectUri, OAuth2ClientCredentials.CLIENT_ID, SCOPE);
+    final Credential credential = authorize();
 
-      final Credential credential = authorize(receiver, redirectUri);
-
-      HttpRequestFactory requestFactory =
-          HTTP_TRANSPORT.createRequestFactory(new HttpRequestInitializer() {
+    HttpRequestFactory requestFactory =
+        HTTP_TRANSPORT.createRequestFactory(new HttpRequestInitializer() {
             @Override
-            public void initialize(HttpRequest request) throws IOException {
-              credential.initialize(request);
-              request.setParser(new JsonObjectParser(JSON_FACTORY));
-            }
-          });
+          public void initialize(HttpRequest request) throws IOException {
+            credential.initialize(request);
+            request.setParser(new JsonObjectParser(JSON_FACTORY));
+          }
+        });
 
-      DailyMotionUrl url = new DailyMotionUrl("https://api.dailymotion.com/videos/favorites");
-      url.setFields("id,tags,title,url");
+    DailyMotionUrl url = new DailyMotionUrl("https://api.dailymotion.com/videos/favorites");
+    url.setFields("id,tags,title,url");
 
-      HttpRequest request = requestFactory.buildGetRequest(url);
-      VideoFeed videoFeed = request.execute().parseAs(VideoFeed.class);
-      if (videoFeed.list.isEmpty()) {
-        System.out.println("No favorite videos found.");
-      } else {
-        if (videoFeed.hasMore) {
-          System.out.print("First ");
-        }
-        System.out.println(videoFeed.list.size() + " favorite videos found:");
-        for (Video video : videoFeed.list) {
-          System.out.println();
-          System.out.println("-----------------------------------------------");
-          System.out.println("ID: " + video.id);
-          System.out.println("Title: " + video.title);
-          System.out.println("Tags: " + video.tags);
-          System.out.println("URL: " + video.url);
-        }
-      }
-    } finally {
-      receiver.stop();
-    }
-  }
-
-  private static Credential authorize(VerificationCodeReceiver receiver, String redirectUri)
-      throws IOException {
-    String code = receiver.waitForCode();
-    AuthorizationCodeFlow codeFlow =
-        new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
-            HTTP_TRANSPORT,
-            JSON_FACTORY,
-            new GenericUrl(TOKEN_SERVER_URL),
-            new ClientParametersAuthentication(
-                OAuth2ClientCredentials.CLIENT_ID, OAuth2ClientCredentials.CLIENT_SECRET),
-            OAuth2ClientCredentials.CLIENT_ID,
-            AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).build();
-
-    TokenResponse response = codeFlow.newTokenRequest(code)
-        .setRedirectUri(redirectUri).setScopes(Arrays.asList(SCOPE)).execute();
-
-    return codeFlow.createAndStoreCredential(response, null);
-  }
-
-  private static void launchInBrowser(
-      String browser, String redirectUrl, String clientId, String scope) throws IOException {
-    String authorizationUrl = new AuthorizationCodeRequestUrl(
-        AUTHORIZATION_SERVER_URL, clientId).setRedirectUri(redirectUrl)
-        .setScopes(Arrays.asList(scope)).build();
-    if (Desktop.isDesktopSupported()) {
-      Desktop desktop = Desktop.getDesktop();
-      if (desktop.isSupported(Action.BROWSE)) {
-        desktop.browse(URI.create(authorizationUrl));
-        return;
-      }
-    }
-    if (browser != null) {
-      Runtime.getRuntime().exec(new String[] {browser, authorizationUrl});
+    HttpRequest request = requestFactory.buildGetRequest(url);
+    VideoFeed videoFeed = request.execute().parseAs(VideoFeed.class);
+    if (videoFeed.list.isEmpty()) {
+      System.out.println("No favorite videos found.");
     } else {
-      System.out.println("Open the following address in your favorite browser:");
-      System.out.println("  " + authorizationUrl);
+      if (videoFeed.hasMore) {
+        System.out.print("First ");
+      }
+      System.out.println(videoFeed.list.size() + " favorite videos found:");
+      for (Video video : videoFeed.list) {
+        System.out.println();
+        System.out.println("-----------------------------------------------");
+        System.out.println("ID: " + video.id);
+        System.out.println("Title: " + video.title);
+        System.out.println("Tags: " + video.tags);
+        System.out.println("URL: " + video.url);
+      }
     }
+  }
+
+  private static Credential authorize() throws Exception {
+    AuthorizationCodeFlow codeFlow = new AuthorizationCodeFlow.Builder(BearerToken
+        .authorizationHeaderAccessMethod(),
+        HTTP_TRANSPORT,
+        JSON_FACTORY,
+        new GenericUrl(TOKEN_SERVER_URL),
+        new ClientParametersAuthentication(
+            ClientCredentials.CLIENT_ID, ClientCredentials.CLIENT_SECRET),
+        ClientCredentials.CLIENT_ID,
+        AUTHORIZATION_SERVER_URL).setScopes(SCOPE).setCredentialStore(new FileCredentialStore(
+        new File(System.getProperty("user.home"), ".credentials/dailymotion.json"), JSON_FACTORY))
+        .build();
+    LocalServerReceiver receiver =
+        new LocalServerReceiver.Builder().setHost(HOST).setPort(PORT).build();
+    return new AuthorizationCodeCommandLine(codeFlow, receiver).authorize("user");
   }
 
   public static void main(String[] args) {
     try {
       try {
-        OAuth2ClientCredentials.errorIfNotSpecified();
+        ClientCredentials.errorIfNotSpecified();
         run();
         // Success!
         return;
