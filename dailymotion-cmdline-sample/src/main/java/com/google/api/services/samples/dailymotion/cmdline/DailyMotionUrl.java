@@ -17,7 +17,6 @@ package com.google.api.services.samples.dailymotion.cmdline;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.util.Key;
 
-
 /**
  * URL for Dailymotion API.
  *

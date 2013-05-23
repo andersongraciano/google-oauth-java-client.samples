@@ -22,6 +22,7 @@ import java.util.List;
  * @author Yaniv Inbar
  */
 public class VideoFeed {
+
   @Key
   public List<Video> list;
 
@@ -30,5 +31,4 @@ public class VideoFeed {
 
   @Key("has_more")
   public boolean hasMore;
-
 }

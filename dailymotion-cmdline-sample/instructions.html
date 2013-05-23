@@ -22,14 +22,14 @@ your <code>JAVA_HOME</code>.</p>
 <p><b>Important:</b> after checking out the project, and before compiling
  and running it, you should edit <code>OAuth2ClientCredentials.java</code> to enter the
  required credentials information. Otherwise, you will get a <code>400 INVALID_CLIENT</code>
- error in your browser. If you want to use a port number other than 8080, you
- should edit <code>LocalServerReceiver</code>.</p>
+ error in your browser. To begin, go to the
+ <a href="http://www.dailymotion.com/profile/developer">Dailymotion Developer Profile</a>,
+ click "Create New API Key" and specify "http://127.0.0.1:8080" as the "Callback URL".</p>
 
 <pre><code>cd <i>[someDirectory]</i>
 hg clone https://code.google.com/p/google-oauth-java-client.samples/ google-oauth-java-client-samples
 cd google-oauth-java-client-samples/dailymotion-cmdline-sample
 <i>[editor]</i> src/main/java/com/google/api/services/samples/dailymotion/cmdline/OAuth2ClientCredentials.java
-<i>[editor]</i> src/main/java/com/google/api/services/samples/dailymotion/cmdline/LocalServerReceiver.java
 mvn compile
 mvn -q exec:java</code></pre>
 

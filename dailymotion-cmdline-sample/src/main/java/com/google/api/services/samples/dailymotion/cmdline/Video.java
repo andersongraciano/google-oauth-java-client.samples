@@ -22,6 +22,7 @@ import java.util.List;
  * @author Yaniv Inbar
  */
 public class Video {
+
   @Key
   public String id;
 
